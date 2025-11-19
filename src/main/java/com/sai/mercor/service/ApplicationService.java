@@ -2,12 +2,14 @@ package com.sai.mercor.service;
 
 import com.sai.mercor.dto.ApplicationRequestDto;
 import com.sai.mercor.dto.ApplicationRequestFiltersDto;
+import com.sai.mercor.dto.ApplicationShortlistRequestDto;
 import com.sai.mercor.entity.Application;
 import com.sai.mercor.enums.WorkAvailability;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,6 +21,39 @@ import static com.sai.mercor.utilities.ApplicationUtilities.nonEmptySorted;
 public class ApplicationService {
 
     private final MongoTemplate mongoTemplate;
+
+    public void shortlistApplication(ApplicationShortlistRequestDto applicationShortlistRequestDto) {
+        String id = applicationShortlistRequestDto.getId();
+        boolean shortlisted = applicationShortlistRequestDto.isShortlisted();
+        Query query = new Query(Criteria.where("_id").is(id));
+        Update update = new Update().set("shortlisted", shortlisted);
+        mongoTemplate.updateFirst(query, update, Application.class);
+    }
+
+    public String getUnspentBudget() {
+        Query query = new Query(Criteria.where("shortlisted").is(true));
+        List<Application> applications = mongoTemplate.find(query, Application.class);
+        double spentAmount = 0;
+        for (Application application : applications) {
+            spentAmount += (
+                    Double.parseDouble(application.getAnnual_salary_expectation().get("full-time").substring(1)
+                    ));
+        }
+        double remaining = 4000000 - spentAmount;
+        return formatMoney(remaining);
+    }
+
+    private String formatMoney(double amount) {
+        if (amount >= 1_000_000_000) {
+            return "$" + String.format("%.2f", amount / 1_000_000_000) + "B";
+        } else if (amount >= 1_000_000) {
+            return "$" + String.format("%.2f", amount / 1_000_000) + "M";
+        } else if (amount >= 1_000) {
+            return "$" + String.format("%.2f", amount / 1_000) + "K";
+        } else {
+            return "$" + String.format("%.2f", amount);
+        }
+    }
 
     public List<Application> getApplications(ApplicationRequestDto applicationRequestDto) {
         List<String> locations = applicationRequestDto.getLocations();
