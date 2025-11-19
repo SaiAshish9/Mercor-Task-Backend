@@ -1,30 +1,32 @@
 package com.sai.mercor.controller.applications;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sai.mercor.dto.ApplicationRequestDto;
+import com.sai.mercor.dto.ApplicationRequestFiltersDto;
+import com.sai.mercor.entity.Application;
+import com.sai.mercor.service.ApplicationService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.util.ResourceUtils;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/u/applications")
 @RequiredArgsConstructor
 public class ApplicationsController {
 
-    private final ObjectMapper objectMapper;
+    private final ApplicationService applicationService;
 
     @PostMapping
-    public Object getApplications(){
-        Object payload;
-        try {
-            ClassPathResource resource = new ClassPathResource("applications.json");
-            payload = objectMapper.readValue(resource.getInputStream(), Object.class);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to read or send JSON", e);
-        }
-        return payload;
+    public List<Application> getApplications(@RequestBody ApplicationRequestDto applicationRequestDto){
+       return applicationService.getApplications(applicationRequestDto);
+    }
+
+    @PostMapping("/filters")
+    public ApplicationRequestFiltersDto getAllFilters() {
+       return applicationService.getFilters();
     }
 
 }
